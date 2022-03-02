@@ -1,1 +1,1 @@
-ConsoleZipChangeFileName
+## ZIP ファイル内のファイル名を変更するコンソールサンプル
