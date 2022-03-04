@@ -1,23 +1,41 @@
 ﻿using System.IO.Compression;
 
-Console.WriteLine("ZIP ファイルのファイル名を変更する");
+Console.WriteLine("ZIP ファイルのフォルダ名を変更する");
 
 // ZIP ファイルを取得
-var zipPath = ".\\data\\app.zip";
+var zipFileName = "XamarinMacAppPipelineTest.app.zip";
+var appFileName = "XamarinMacAppPipelineTest.app";
+var newZipFileName = System.IO.Path.GetFileNameWithoutExtension(zipFileName)+"-new.zip";
+var newAppFileName = System.IO.Path.GetFileNameWithoutExtension(appFileName)+"-123456789.app";
+var zipPath = $@".\data\{zipFileName}";
+var newZipPath = $@".\data\{newZipFileName}";
 
 // ZIP ファイルをオープンする
-using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Update);
+using var archive = ZipFile.Open(zipPath, ZipArchiveMode.Read);
 
-// 新しいファイル名でEntryを作成
-var newEntry = archive.CreateEntry("app-123456789.txt");
+// 新しいZIPを作成する
+using var memoryStream = new MemoryStream();
+using var newArchive = new ZipArchive(memoryStream, ZipArchiveMode.Create, true);
 
-// 元のファイルをコピーする
-var fileEntry = archive.GetEntry("app.txt");
-using (var a = fileEntry.Open())
-using (var b = newEntry.Open())
+foreach (var entry in archive.Entries)
 {
-    a.CopyTo(b);
+    // ディレクトリ名を新しいアプリ名に変更する
+    var newEntryName = entry.FullName.Replace(appFileName, newAppFileName);
+    
+    var newEntry = newArchive.CreateEntry(newEntryName);
+    // ファイルの場合はコピーする
+    if (!entry.FullName.EndsWith("/"))
+    {
+        // 元のファイルをコピーする
+        using var archiveEntry = entry.Open();
+        using var newArchiveEntry = newEntry.Open();
+        archiveEntry.CopyTo(newArchiveEntry);
+    }
 }
 
-// 元のファイルを削除する
-fileEntry.Delete();
+using var fileStream = new FileStream(newZipPath, FileMode.Create);
+memoryStream.Seek(0, SeekOrigin.Begin);
+memoryStream.CopyTo(fileStream);
+
+Console.WriteLine($"{zipPath}");
+Console.WriteLine($"==> {newZipPath}");
